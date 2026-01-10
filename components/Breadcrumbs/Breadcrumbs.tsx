@@ -9,7 +9,7 @@ export default function Breadcrumbs(note: BreadcrumbsProps) {
     <nav className={css.navContainer}>
       <ul className={css.navList}>
         <li className={css.navItem}>
-          <Link href="/notes" className={css.navLink}>
+          <Link href="/notes/filter/all" className={css.navLink}>
             All Notes
           </Link>{' '}
         </li>
