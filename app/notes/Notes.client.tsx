@@ -1,8 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import css from './NotesPage.module.css';
+import { usePathname } from 'next/navigation';
+import { useQuery } from '@tanstack/react-query';
+import { Toaster, toast } from 'react-hot-toast';
+import { useDebounce } from 'use-debounce';
 
+import css from './NotesPage.module.css';
 import NoteList from '@/components/NoteList/NoteList';
 import Pagination from '@/components/Pagination/Pagination';
 import Modal from '@/components/Modal/Modal';
@@ -10,17 +14,33 @@ import NoteForm from '@/components/NoteForm/NoteForm';
 import SearchBox from '@/components/SearchBox/SearchBox';
 import MonkeyLoader from '@/components/MonkeyLoader/MonkeyLoader';
 
-import { useQuery } from '@tanstack/react-query';
 import { fetchNotes } from '@/lib/api';
-import { useDebounce } from 'use-debounce';
-import { Toaster, toast } from 'react-hot-toast';
+import { NoteTag, TAGS } from '@/types/note';
 
 const PER_PAGE = 10;
 const MONKEY_DURATION = 3000;
 
-export default function NotesClient() {
+type NotesClientProps = {
+  tag?: NoteTag;
+};
+
+export default function NotesClient({ tag }: NotesClientProps) {
+  const pathname = usePathname();
+
+  const tagFromPath = (() => {
+    if (!pathname.startsWith('/notes/filter')) return undefined;
+
+    const parts = pathname.split('/');
+    const tag = parts[parts.length - 1];
+
+    if (tag === 'all') return undefined;
+    if (TAGS.includes(tag as NoteTag)) return tag as NoteTag;
+
+    return undefined;
+  })();
+
   const [page, setPage] = useState(1);
-  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [showMonkey, setShowMonkey] = useState(false);
 
   const [searchInput, setSearchInput] = useState(() => {
@@ -31,12 +51,13 @@ export default function NotesClient() {
   const [debouncedSearch] = useDebounce(searchInput, 500);
 
   const { data, isFetching } = useQuery({
-    queryKey: ['notes', page, debouncedSearch],
+    queryKey: ['notes', page, debouncedSearch, tagFromPath],
     queryFn: () =>
       fetchNotes({
         page,
         perPage: PER_PAGE,
         search: debouncedSearch || undefined,
+        tag: tagFromPath,
       }),
     placeholderData: prev => prev,
   });
@@ -51,6 +72,10 @@ export default function NotesClient() {
     }
   }, [data, debouncedSearch]);
 
+  useEffect(() => {
+    setPage(1);
+  }, [tagFromPath]);
+
   return (
     <div className={css.app}>
       <Toaster position="top-right" />
@@ -61,6 +86,7 @@ export default function NotesClient() {
           onChange={value => {
             setSearchInput(value);
             setPage(1);
+            localStorage.setItem('notes-search', value);
           }}
         />
 
@@ -68,16 +94,16 @@ export default function NotesClient() {
           <Pagination totalPages={data.totalPages} currentPage={page} onPageChange={setPage} />
         )}
 
-        <button className={css.button} onClick={() => setIsModalOpen(true)}>
+        <button className={css.button} onClick={() => setIsFormModalOpen(true)}>
           Create note +
         </button>
       </header>
 
       {data && data.notes.length > 0 && <NoteList notes={data.notes} />}
 
-      {isModalOpen && (
-        <Modal onClose={() => setIsModalOpen(false)}>
-          <NoteForm onClose={() => setIsModalOpen(false)} />
+      {isFormModalOpen && (
+        <Modal>
+          <NoteForm onClose={() => setIsFormModalOpen(false)} />
         </Modal>
       )}
 

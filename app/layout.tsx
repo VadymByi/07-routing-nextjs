@@ -28,8 +28,8 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           <Header />
           <main>{children}</main>
           <Footer />
-          <div id="modal-root"></div>
         </TanStackProvider>
+        <div id="modal-root"></div>
       </body>
     </html>
   );

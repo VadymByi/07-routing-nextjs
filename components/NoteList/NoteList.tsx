@@ -1,49 +1,34 @@
-import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { deleteNote } from '../../lib/api';
-import css from './NoteList.module.css';
-import type { Note } from '../../types/note';
-import toast from 'react-hot-toast';
-import Link from 'next/link';
+'use client';
 
-interface NoteListProps {
+import Link from 'next/link';
+import css from './NoteList.module.css';
+import { Note } from '@/types/note';
+
+interface Props {
   notes: Note[];
 }
-export default function NoteList({ notes }: NoteListProps) {
-  const queryClient = useQueryClient();
 
-  const deleteMutation = useMutation({
-    mutationFn: deleteNote,
-    onSuccess: () => {
-      toast.success('Note deleted');
-      queryClient.invalidateQueries({ queryKey: ['notes'] });
-    },
-    onError: () => {
-      toast.error('Failed to delete note');
-    },
-  });
+export default function NoteList({ notes }: Props) {
+  if (notes.length === 0) {
+    return <p>No notes available.</p>;
+  }
 
-  if (notes.length === 0) return null;
   return (
     <ul className={css.list}>
-      {notes.map(note => {
-        return (
-          <li key={note.id} className={css.listItem}>
-            <h2 className={css.title}>{note.title}</h2>
-            <p className={css.content}>{note.content}</p>
+      {notes.map(note => (
+        <li key={note.id} className={css.listItem}>
+          <Link href={`/notes/${note.id}`} className={css.link}>
+            <h3 className={css.title}>{note.title}</h3>
+
+            <p className={css.content}>{note.content.slice(0, 80)}...</p>
+
             <div className={css.footer}>
-              <span className={css.tag}>Note tag: {note.tag}</span>
-              <Link href={`/notes/${note.id}`}>View details</Link>
-              <button
-                className={css.button}
-                onClick={() => deleteMutation.mutate(note.id)}
-                disabled={deleteMutation.isPending}
-              >
-                Delete
-              </button>
+              <span className={css.tag}>{note.tag}</span>
+              <span className={css.date}>{note.createdAt}</span>
             </div>
-          </li>
-        );
-      })}
+          </Link>
+        </li>
+      ))}
     </ul>
   );
 }
