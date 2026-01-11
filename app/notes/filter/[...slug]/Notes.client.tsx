@@ -1,7 +1,6 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { usePathname } from 'next/navigation';
 import { useQuery } from '@tanstack/react-query';
 import { Toaster, toast } from 'react-hot-toast';
 import { useDebounce } from 'use-debounce';
@@ -15,7 +14,7 @@ import SearchBox from '@/components/SearchBox/SearchBox';
 import MonkeyLoader from '@/components/MonkeyLoader/MonkeyLoader';
 
 import { fetchNotes } from '@/lib/api';
-import { NoteTag, TAGS } from '@/types/note';
+import { NoteTag } from '@/types/note';
 
 const PER_PAGE = 10;
 const MONKEY_DURATION = 3000;
@@ -25,20 +24,6 @@ type NotesClientProps = {
 };
 
 export default function NotesClient({ tag }: NotesClientProps) {
-  const pathname = usePathname();
-
-  const tagFromPath = (() => {
-    if (!pathname.startsWith('/notes/filter')) return undefined;
-
-    const parts = pathname.split('/');
-    const tag = parts[parts.length - 1];
-
-    if (tag === 'all') return undefined;
-    if (TAGS.includes(tag as NoteTag)) return tag as NoteTag;
-
-    return undefined;
-  })();
-
   const [page, setPage] = useState(1);
   const [isFormModalOpen, setIsFormModalOpen] = useState(false);
   const [showMonkey, setShowMonkey] = useState(false);
@@ -51,13 +36,13 @@ export default function NotesClient({ tag }: NotesClientProps) {
   const [debouncedSearch] = useDebounce(searchInput, 500);
 
   const { data, isFetching } = useQuery({
-    queryKey: ['notes', page, debouncedSearch, tagFromPath],
+    queryKey: ['notes', page, debouncedSearch, tag],
     queryFn: () =>
       fetchNotes({
         page,
         perPage: PER_PAGE,
         search: debouncedSearch || undefined,
-        tag: tagFromPath,
+        tag,
       }),
     placeholderData: prev => prev,
   });
@@ -74,7 +59,7 @@ export default function NotesClient({ tag }: NotesClientProps) {
 
   useEffect(() => {
     setPage(1);
-  }, [tagFromPath]);
+  }, [tag]);
 
   return (
     <div className={css.app}>
@@ -102,7 +87,8 @@ export default function NotesClient({ tag }: NotesClientProps) {
       {data && data.notes.length > 0 && <NoteList notes={data.notes} />}
 
       {isFormModalOpen && (
-        <Modal>
+        <Modal onClose={() => setIsFormModalOpen(false)}>
+          {' '}
           <NoteForm onClose={() => setIsFormModalOpen(false)} />
         </Modal>
       )}

@@ -1,5 +1,4 @@
-import Modal from '@/components/Modal/Modal';
-import NotePreviewClient from '@/components/NotePreview/NotePreviewClient';
+import NotePreviewClient from './NotePreview.client';
 import { notFound } from 'next/navigation';
 
 type Props = {
@@ -15,9 +14,5 @@ export default async function NotePreviewModal({ params }: Props) {
     notFound();
   }
 
-  return (
-    <Modal>
-      <NotePreviewClient noteId={id} />
-    </Modal>
-  );
+  return <NotePreviewClient noteId={id} />;
 }
